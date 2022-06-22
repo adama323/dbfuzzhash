@@ -6,6 +6,7 @@ def main():
     working = os.getcwd()
     os.chdir('hash_testing' + os.path.sep + 'samples')    
     samples = ['lorem_01.txt', 'lorem_02.txt', 'lorem_03.txt']
+
     h1 = ppdeep.hash_from_file(samples[0])
     print('hash of %s is %s' % (samples[0], h1))
     h2 = ppdeep.hash_from_file(samples[1])
@@ -28,5 +29,6 @@ def main():
     print('\nssdeep.exe results')
     print(stdout.decode("utf-8"))
     print('done')
+    
 if __name__ == '__main__':
     main()
