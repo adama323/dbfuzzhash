@@ -3,6 +3,8 @@ import struct
 import base64
 import os
 import ppdeep
+import hashlib
+
 
 def get_all_7_char_chunks(h):
     #unpack 7-gram string into set of ints
@@ -23,17 +25,31 @@ def get_tokenized_ssdeep(inhash : str) -> tuple:
     return preprocess_hash(inhash)
 
 def get_from_files(indir : str) -> bool:
-    print('get_from_files')
+    #print('get_from_files')
     paths = []
     for currentpath, folders, files in os.walk(indir):
         for file in files:
             paths.append(os.path.join(currentpath, file))
-    print('generating hash from files')
+    print('generating hash from files...')
     for fpath in paths:
         deep_hash = ppdeep.hash_from_file(fpath)
-        print('\t' + fpath)
-        print('\t' + deep_hash)
-        print('\t', get_tokenized_ssdeep(deep_hash))
+        md5 = hashlib.md5()
+        sha1 = hashlib.sha1()
+        sha256 = hashlib.sha256()
+        with open(fpath, 'rb') as fd:
+            while True:
+                data = fd.read(65535)
+                if not data:
+                    break
+                md5.update(data)
+                sha1.update(data)
+                sha256.update(data)
+        print('\tfile path: ' + fpath)
+        print('\tmd5 hash:' + md5.hexdigest())
+        print('\tsha1 hash:' + sha1.hexdigest())
+        print('\tsha256 hash:' + sha256.hexdigest())
+        print('\tssdeep hash: ' + deep_hash)
+        print('\ttokenized ssdeep hash: ', get_tokenized_ssdeep(deep_hash))
     return True
 
 
