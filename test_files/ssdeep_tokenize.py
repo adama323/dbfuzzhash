@@ -1,0 +1,50 @@
+import argparse
+import struct
+import base64
+import os
+import ppdeep
+
+def get_all_7_char_chunks(h):
+    #unpack 7-gram string into set of ints
+    return set((struct.unpack("<Q", base64.b64decode(h[i:i+7] + "=") + b"\x00\x00\x00")[0] for i in range(len(h) - 6)))
+
+def preprocess_hash(h):
+    block_size, h = h.split(":", 1)
+    block_size = int(block_size)
+    # Reduce any sequence of the same char greater than 3 to 3
+    for c in set(list(h)):
+        while c * 4 in h:
+            h = h.replace(c * 4, c * 3)
+    block_data, double_block_data = h.split(":")
+    return block_size, get_all_7_char_chunks(block_data), get_all_7_char_chunks(double_block_data)
+
+def get_tokenized_ssdeep(inhash : str) -> tuple:
+    #print('Tokenized ssdeep hash...')
+    return preprocess_hash(inhash)
+
+def get_from_files(indir : str) -> bool:
+    print('get_from_files')
+    paths = []
+    for currentpath, folders, files in os.walk(indir):
+        for file in files:
+            paths.append(os.path.join(currentpath, file))
+    print('generating hash from files')
+    for fpath in paths:
+        deep_hash = ppdeep.hash_from_file(fpath)
+        print('\t' + fpath)
+        print('\t' + deep_hash)
+        print('\t', get_tokenized_ssdeep(deep_hash))
+    return True
+
+
+if __name__ == '__main__':
+    ap = argparse.ArgumentParser()
+    ap.add_argument("-t", "--token", required=False, help="Tokenize ssdeep hash to ngram")
+    ap.add_argument("-p", "--path", required=False, help="Calculate and tokenize ssdeep hash for all files from path")
+    args = vars(ap.parse_args())
+    if args['token']:
+        get_tokenized_ssdeep(args['token'])
+    elif args['path']:
+        get_from_files(args['path'])
+    else:
+        ap.print_usage()
