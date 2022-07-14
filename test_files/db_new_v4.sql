@@ -34,12 +34,12 @@ COLLATE = utf8mb4_0900_ai_ci;
 -- Table `hashproject`.`crypto_hash_table`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `hashproject`.`crypto_hash_table` (
-  `idcrypto` INT NOT NULL,
+  `crypto_id` INT NOT NULL,
   `md5_hash` VARCHAR(32) NULL DEFAULT NULL,
   `sha1_hash` VARCHAR(40) NULL DEFAULT NULL,
   `sha256_hash` VARCHAR(148) NULL DEFAULT NULL,
   `fuzzy_hash_table_hash_id` INT NOT NULL,
-  PRIMARY KEY (`idcrypto`),
+  PRIMARY KEY (`crypto_id`),
   INDEX `fk_crypto_hash_table_fuzzy_hash_table1_idx` (`fuzzy_hash_table_hash_id` ASC) VISIBLE,
   CONSTRAINT `fk_crypto_hash_table_fuzzy_hash_table1`
     FOREIGN KEY (`fuzzy_hash_table_hash_id`)

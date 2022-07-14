@@ -34,6 +34,7 @@ def get_from_files(indir : str) -> dict:
     print('generating hash from files...')
     out = dict()
     i = 0
+    
     for fpath in paths:
         deep_hash = ppdeep.hash_from_file(fpath)
         md5 = hashlib.md5()
@@ -49,10 +50,24 @@ def get_from_files(indir : str) -> dict:
                 sha256.update(data)
         out[i] = [fpath, md5.hexdigest(), sha1.hexdigest(), sha256.hexdigest(), deep_hash, get_tokenized_ssdeep(deep_hash)]
         i += 1
+        if i % 100 == 0:
+            print('processed: %d/%d' % (i, len(paths)))
     return out
 
+def print_sql_result(q, mycur):
+    try:
+        print('\nquery "%s" returned: ' % q)
+        r = [line[0] for line in mycur]
+        for line in r:
+            print('\t%s' % line)
+    except Exception as e:
+        print('\tno result')
+        pass
+    return
+
+
 def upload_from_files(indir: str) -> bool:
-    hashes = get_from_files(indir)
+    #setup our database connection
     print("\ngetting connection data, press <enter> for default...")
     SERVER = input("Server (localhost):")
     if len(SERVER) < 1:
@@ -68,14 +83,89 @@ def upload_from_files(indir: str) -> bool:
         print(e)
         return False
     mycur = mydb.cursor()
-        db2 = 'show databases'
-    mycur.execute(db2)
-    db2 = [line[0] for line in mycur]
-    for line in db2:
-        if line not in databases:
-            print('Created new database from schema: "%s"' % line)
-    return True
+    DATABASE = input('Database name (hashproject):')
+    if len(DATABASE) < 1:
+        DATABASE = 'hashproject'
+    q = 'use %s;' % DATABASE
+    mycur.execute(q)
+    #print_sql_result(q, mycur)
+    q = 'show tables;'
+    mycur.execute(q)
+    #print_sql_result(q, mycur)
+    
+    # get the primary keys for each table
+    q = 'select max(hash_id) from fuzzy_hash_table;'
+    mycur.execute(q)
+    r = [line[0] for line in mycur]
+    try:
+        hash_id = int(r[0])
+        hash_id += 1
+    except Exception as e:
+        #errors for empty table
+        print('hash_id error:',e)
+        hash_id = 1
+        pass
 
+    q = 'select max(chunk_id) from ssdeep_chunk_table;'
+    mycur.execute(q)
+    r = [line[0] for line in mycur]
+    try:
+        chunk_id = int(r[0])
+        chunk_id += 1
+    except Exception as e:
+        #errors for empty table
+        print('chunk_id error:', e)
+        chunk_id = 1
+        pass
+
+    q = 'select max(crypto_id) from crypto_hash_table;'
+    mycur.execute(q)
+    r = [line[0] for line in mycur]
+    try:
+        crypto_id = int(r[0])
+        crypto_id += 1
+    except Exception as e:
+        #errors for empty table
+        print('crypto_id error: ', e)
+        crypto_id = 1
+        pass
+    
+    hashes = get_from_files(indir)
+    print('got %d files to upload...' % len(hashes))
+
+    # put stuff in the database
+    for k,v in hashes.items():
+        md5 = v[1]
+        sha1 = v[2]
+        sha256 = v[3]
+        ssd = v[4]
+        ssd_t = v[5]
+        q = 'insert into fuzzy_hash_table values(%d, "%s");' % (hash_id, ssd)
+        #print(q)
+        mycur.execute(q)
+        #print_sql_result(q, mycur)
+        chunk_size = ssd_t[0]
+        for chunk in ssd_t[1]:
+            q = 'insert into ssdeep_chunk_table values(%d, %d, %d, %d);' % (chunk_id, chunk_size, chunk, hash_id)
+            #print(q)
+            mycur.execute(q)
+            #print_sql_result(q, mycur)
+            chunk_id += 1
+        for doublechunk in ssd_t[2]:
+            q = 'insert into ssdeep_chunk_table values(%d, %d, %d, %d);' % (chunk_id, chunk_size, doublechunk, hash_id)
+            #print(q)
+            mycur.execute(q)
+            #print_sql_result(q, mycur)
+            chunk_id += 1
+        q = 'insert into crypto_hash_table values(%d, "%s", "%s", "%s", %d);' % (crypto_id, md5, sha1, sha256, hash_id)
+        #print(q)
+        mycur.execute(q)
+        #print_sql_result(q, mycur)
+        crypto_id += 1
+        hash_id += 1
+        print('added file: "%s" to database' % v[0])
+        mydb.commit()
+    return True
 
 if __name__ == '__main__':
     ap = argparse.ArgumentParser()
