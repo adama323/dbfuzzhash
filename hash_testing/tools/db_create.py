@@ -17,7 +17,7 @@ def create_db( infile : str ) -> bool:
     SERVER = input("Server (localhost):")
     if len(SERVER) < 1:
         SERVER = 'localhost'
-    USERNAME = input('User name (root)')
+    USERNAME = input('User name (root):')
     if len(USERNAME) < 1:
         USERNAME = 'root'
     PASS = getpass.getpass('Password:')

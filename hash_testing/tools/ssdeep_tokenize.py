@@ -21,7 +21,7 @@ def preprocess_hash(h):
     return block_size, get_all_7_char_chunks(block_data), get_all_7_char_chunks(double_block_data)
 
 def get_tokenized_ssdeep(inhash : str) -> tuple:
-    #print('Tokenized ssdeep hash...')
+    print('Tokenized ssdeep hash...')
     return preprocess_hash(inhash)
 
 def get_from_files(indir : str) -> bool:
@@ -45,9 +45,9 @@ def get_from_files(indir : str) -> bool:
                 sha1.update(data)
                 sha256.update(data)
         print('\tfile path: ' + fpath)
-        print('\tmd5 hash:' + md5.hexdigest())
-        print('\tsha1 hash:' + sha1.hexdigest())
-        print('\tsha256 hash:' + sha256.hexdigest())
+        print('\tmd5 hash: ' + md5.hexdigest())
+        print('\tsha1 hash: ' + sha1.hexdigest())
+        print('\tsha256 hash: ' + sha256.hexdigest())
         print('\tssdeep hash: ' + deep_hash)
         print('\ttokenized ssdeep hash: ', get_tokenized_ssdeep(deep_hash))
     return True
@@ -59,7 +59,8 @@ if __name__ == '__main__':
     ap.add_argument("-p", "--path", required=False, help="Calculate and tokenize ssdeep hash for all files from path")
     args = vars(ap.parse_args())
     if args['token']:
-        get_tokenized_ssdeep(args['token'])
+        val = get_tokenized_ssdeep(args['token'])
+
     elif args['path']:
         get_from_files(args['path'])
     else:
